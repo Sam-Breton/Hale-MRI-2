@@ -1,0 +1,366 @@
+﻿Imports System.ComponentModel
+Imports LibDatabase.Contexts
+Imports LibDatabase
+Imports LibGlobals
+
+''' <summary>
+''' Form Control that can be used by data consumers (forms
+''' that derive from FrmDatabaseForm) to visually navigate
+''' and manipulate data in the parent form's master  
+''' BindingSource, and handle certain events for controls 
+''' bound to it.
+''' </summary>
+Public Class RecordNavigationBar
+#Region "Types and Constants"
+    Public Class NavigationEventArgs
+        Inherits EventArgs
+        ' Custom event arguments for navigation events.
+        ' When raised, clients can inspect the properties.
+        Public Property EventName As String
+        Public Property Key As Object
+        Public Property Value As Object
+        Public Sub New(eventName As String, Optional key As Object = Nothing, Optional value As Object = Nothing)
+            Me.EventName = eventName
+            Me.Key = key
+            Me.Value = value
+        End Sub
+    End Class
+
+    Public Delegate Sub NavigationEventHandler(sender As Object, e As NavigationEventArgs)
+
+    Public Event NavigationEvent As NavigationEventHandler
+#End Region
+#Region "Private Members"
+    Private mBoundControls As List(Of Control) = Nothing    ' List of Controls bound to the MasterSource.
+    Private mDatabase As HaleMRIContext = Nothing           ' The current database context.
+    Private mFilter As Object = Nothing                     ' The current filter object, if any.
+    Private mMasterSource As BindingSource = Nothing        ' The current master BindingSource.
+    Private mServiceProvider As IServiceProvider            ' The current database ServiceProvider reference.
+    Private mToolTip As New ToolTip()                       ' ToolTip for the Control buttons.
+    Private mValid As Boolean = False                       ' Flag indicating whether all required fields are non-NULL. 
+#End Region
+#Region "Constructors"
+    Public Sub New()
+        InitializeComponent()
+    End Sub
+#End Region
+#Region "Public Inteface"
+    Public Property BoundControls As List(Of Control)
+        Get
+            Return mBoundControls
+        End Get
+        Set(controls As List(Of Control))
+            ' Assigns "change" event handlers to any bound controls. 
+            ' This notifies clients when a record is being edited.
+            If controls IsNot Nothing Then
+                For Each ctrl In controls
+                    Select Case True
+                        Case TypeOf ctrl Is TextBox
+                            AddHandler CType(ctrl, TextBox).TextChanged, AddressOf Bound_TextChanged
+                        Case TypeOf ctrl Is ComboBox
+                            AddHandler CType(ctrl, ComboBox).SelectionChangeCommitted, AddressOf Bound_SelectionChangeCommitted
+                        Case TypeOf ctrl Is CheckBox
+                            AddHandler CType(ctrl, CheckBox).CheckedChanged, AddressOf Bound_CheckChanged
+                        Case TypeOf ctrl Is DataGridView
+                            AddHandler CType(ctrl, DataGridView).CellBeginEdit, AddressOf Bound_CellBeginEdit
+                            AddHandler CType(ctrl, DataGridView).SelectionChanged, AddressOf Bound_SelectionChanged
+                        Case Else
+                            ' Handle other control types if necessary.
+                    End Select
+                Next
+            End If
+            mBoundControls = controls
+        End Set
+    End Property
+
+    Public ReadOnly Property Count As Integer
+        Get
+            Return MasterSource.Count
+        End Get
+    End Property
+
+    Public ReadOnly Property Current As Object
+        Get
+            Return MasterSource?.Current(Of Object)
+        End Get
+    End Property
+
+    Public Property Database As HaleMRIContext
+        Get
+            Return mDatabase
+        End Get
+        Set(value As HaleMRIContext)
+            Me.Enabled = value IsNot Nothing AndAlso MasterSource IsNot Nothing
+            mDatabase = value
+        End Set
+    End Property
+
+    Public Overloads Property Enabled As Boolean
+        Get
+            Return MyBase.Enabled
+        End Get
+        Set(value As Boolean)
+            MyBase.Enabled = value
+            HandleDataSourceEvents = MyBase.Enabled
+        End Set
+    End Property
+
+    Public Property Filter As Object
+        Get
+            Return mFilter
+        End Get
+        Set(value As Object)
+            mFilter = value
+            ChkToggleFilter.Enabled = mFilter IsNot Nothing
+        End Set
+    End Property
+
+    Public Property FilterOn As Boolean
+        Get
+            Return ChkToggleFilter.Checked
+        End Get
+        Set(value As Boolean)
+            ChkToggleFilter.Checked = value
+        End Set
+    End Property
+
+    Public Property NoUpdates As Boolean = False
+
+    Public ReadOnly Property IsValid As Boolean
+        Get
+            Return mValid
+        End Get
+    End Property
+
+    Public Property MasterSource As BindingSource
+        Get
+            Return mMasterSource
+        End Get
+        Set(value As BindingSource)
+            mMasterSource = value
+            Me.Enabled = mDatabase IsNot Nothing AndAlso MasterSource IsNot Nothing
+        End Set
+    End Property
+
+    Public Property Position As Integer
+        Set(value As Integer)
+            MasterSource.Position = value
+        End Set
+        Get
+            Return MasterSource?.Position
+        End Get
+    End Property
+
+    Public Overrides Sub Refresh()
+        ShowPosition()
+        ControlsEnable()
+        MyBase.Refresh()
+    End Sub
+
+    Public Property ServiceProvider As IServiceProvider
+        Get
+            Return mServiceProvider
+        End Get
+        Set(value As IServiceProvider)
+            mServiceProvider = value
+        End Set
+    End Property
+
+    Public Sub ShowPosition()
+        TxtCurrentPosition.Text = $"{Me.Position + 1} of {Me.Count}".ToString
+    End Sub
+#End Region
+#Region "Event Handlers"
+    Private Sub Bound_CellBeginEdit(sender As Object, e As DataGridViewCellCancelEventArgs)
+        SaveUndoControlsEnabled = True
+    End Sub
+
+    Private Sub Bound_CheckChanged(sender As Object, e As EventArgs)
+        SaveUndoControlsEnabled = True
+    End Sub
+
+    Private Sub Bound_SelectionChangeCommitted(sender As Object, e As EventArgs)
+        Dim cmb As ComboBox = CType(sender, ComboBox)
+        If cmb.SelectedIndex <> kNoCurrentSelection Then
+            SaveUndoControlsEnabled = True
+        End If
+    End Sub
+
+    Private Sub Bound_SelectionChanged(sender As Object, e As EventArgs)
+        Dim dgv As DataGridView = CType(sender, DataGridView)
+        Me.CmdDelete.Enabled = dgv.SelectedRows.Count > 0
+    End Sub
+
+    Private Sub Bound_TextChanged(sender As Object, e As EventArgs)
+        Dim txtbox As TextBox = CType(sender, TextBox)
+        If txtbox.Modified Then
+            SaveUndoControlsEnabled = True
+            txtbox.Modified = False ' Reset the modified state to prevent repeated triggering.
+        End If
+    End Sub
+
+    Private Sub ChkToggleFilter_Click(sender As Object, e As EventArgs) Handles ChkToggleFilter.Click
+        If ChkToggleFilter.Checked Then
+            RaiseEvent NavigationEvent(Me, New NavigationEventArgs("FilterOn"))
+        Else
+            RaiseEvent NavigationEvent(Me, New NavigationEventArgs("FilterOff"))
+        End If
+    End Sub
+
+    Private Sub CmdAddNew_Click(sender As Object, e As EventArgs) Handles CmdAddNew.Click
+        'If MasterSource.IsBindingSuspended Then MasterSource.ResumeBinding()
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("AddNew"))
+        MasterSource.AddNew()
+    End Sub
+
+    Private Sub CmdDelete_Click(sender As Object, e As EventArgs) Handles CmdDelete.Click
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Delete"))
+    End Sub
+
+    Private Sub CmdRefresh_Click(sender As Object, e As EventArgs) Handles CmdRefresh.Click
+        MasterSource.ResetBindings(False)
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Refresh"))
+    End Sub
+
+    Private Sub CmdGotoFirst_Click(sender As Object, e As EventArgs) Handles CmdGotoFirst.Click
+        MasterSource.MoveFirst()
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("GotoFirst"))
+    End Sub
+
+    Private Sub CmdGotoLast_Click(sender As Object, e As EventArgs) Handles CmdGotoLast.Click
+        MasterSource.MoveLast()
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("GotoLast"))
+    End Sub
+
+    Private Sub CmdGotoNext_Click(sender As Object, e As EventArgs) Handles CmdGotoNext.Click
+        If Me.Position + 1 < Me.Count Then MasterSource.MoveNext()
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("GotoNext"))
+    End Sub
+
+    Private Sub CmdGotoPrevious_Click(sender As Object, e As EventArgs) Handles CmdGotoPrevious.Click
+        If Me.Position > 0 Then MasterSource.MovePrevious()
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("GotoNext"))
+    End Sub
+
+    Private Sub CmdSave_Click(sender As Object, e As EventArgs) Handles CmdSave.Click
+        If Not NoUpdates Then
+            MasterSource.Save(mDatabase)
+        End If
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Save"))
+        SaveUndoControlsEnabled = False
+    End Sub
+
+    Private Sub CmdUndo_Click(sender As Object, e As EventArgs) Handles CmdUndo.Click
+        MasterSource.Undo(Me.Database)
+        SaveUndoControlsEnabled = False
+        RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Undo"))
+    End Sub
+
+    Private Sub DataSource_AddingNew(sender As Object, e As AddingNewEventArgs)
+        CmdUndo.Enabled = True
+    End Sub
+
+    Private Sub DataSource_PositionChanged(sender As Object, e As EventArgs)
+        Me.Refresh()
+    End Sub
+#End Region
+#Region "Private Interface"
+    Private WriteOnly Property BoundControlsEnabled As Boolean
+        Set(value As Boolean)
+            If mBoundControls IsNot Nothing Then
+                For Each ctrl In mBoundControls
+                    ctrl.Enabled = value
+                Next
+            End If
+        End Set
+    End Property
+
+    Public Sub ControlsEnable()
+        ' Enables our Controls according to the master BindingSource's
+        ' current state.
+        CmdGotoFirst.Enabled = Not CmdUndo.Enabled AndAlso Me.Count > 0                 ' Navigation allowed only if MasterSource has records.
+        CmdAddNew.Enabled = Not CmdUndo.Enabled AndAlso Me.MasterSource IsNot Nothing   ' Adding allowed only if a record is currently selected and not being edited.
+        CmdDelete.Enabled = CmdAddNew.Enabled AndAlso Me.Current IsNot Nothing          ' Deletion allowed only if a record is currently selected and not being edited.
+        TxtCurrentPosition.Enabled = Me.Position <> kNoCurrentRecord                    ' Position Control enabled only if a record is currently selected.
+        ' The remaining Control states can be computed.
+        CmdGotoLast.Enabled = CmdGotoFirst.Enabled
+        CmdGotoNext.Enabled = CmdGotoFirst.Enabled
+        CmdGotoPrevious.Enabled = CmdGotoFirst.Enabled
+        CmdRefresh.Enabled = CmdGotoFirst.Enabled
+        TxtFind.Enabled = CmdRefresh.Enabled
+        If Not CmdUndo.Enabled Then CmdSave.Enabled = False
+        ' BoundControls are enabled only if the MasterSource has records and a record is currently selected.
+        BoundControlsEnabled = Me.Position <> kNoCurrentRecord AndAlso Me.Count > 0
+    End Sub
+
+    Private Sub RecordNavigationBar_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        Try
+            mToolTip.SetToolTip(CmdAddNew, "Add New Record")
+            mToolTip.SetToolTip(CmdDelete, "Delete Current Record")
+            mToolTip.SetToolTip(CmdRefresh, "Refresh Records")
+            mToolTip.SetToolTip(CmdGotoFirst, "Go to First Record")
+            mToolTip.SetToolTip(CmdGotoLast, "Go to Last Record")
+            mToolTip.SetToolTip(CmdGotoNext, "Go to Next Record")
+            mToolTip.SetToolTip(CmdGotoPrevious, "Go to Previous Record")
+            mToolTip.SetToolTip(ChkToggleFilter, "Toggle Filter")
+            mToolTip.SetToolTip(CmdSave, "Save Changes")
+            mToolTip.SetToolTip(CmdUndo, "Undo Changes")
+        Catch ex As Exception
+            MessageBox.Show(String.Format(STR_ERR_OBJECT_LOAD, "navigation bar", ex.Message), STR_TITLE_APPLICATION_ERROR, MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub TxtFind_TextChanged(sender As Object, e As EventArgs) Handles TxtFind.TextChanged
+        If Not String.IsNullOrEmpty(TxtFind.Text) Then RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Find", TxtFind.Text))
+    End Sub
+
+    Private WriteOnly Property HandleDataSourceEvents As Boolean
+        Set(value As Boolean)
+            Static handled As Boolean
+            If value <> handled AndAlso MasterSource IsNot Nothing Then
+                If value Then
+                    AddHandler MasterSource.AddingNew, AddressOf DataSource_AddingNew
+                    AddHandler MasterSource.PositionChanged, AddressOf DataSource_PositionChanged
+                    ' Set our initial control states.
+                    ShowPosition()
+                    ControlsEnable()
+                Else
+                    RemoveHandler MasterSource.AddingNew, AddressOf DataSource_AddingNew
+                    RemoveHandler MasterSource.PositionChanged, AddressOf DataSource_PositionChanged
+                End If
+                handled = value
+            End If
+        End Set
+    End Property
+
+    Public WriteOnly Property SaveUndoControlsEnabled As Boolean
+        ' The Save and Undo Controls are enabled only when the current record is being edited. 
+        ' This will also enable any navigation and modification Controls accordingly.
+        Set(value As Boolean)
+            CmdSave.Enabled = value
+            CmdUndo.Enabled = CmdSave.Enabled
+            ControlsEnable()
+            RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Editing",, value))
+        End Set
+    End Property
+
+    Public WriteOnly Property SaveUndoControlsEnabled2 As Boolean
+        ' The Save and Undo Controls are enabled only when the current record is being edited. 
+        ' This will also enable any navigation and modification Controls accordingly.
+        Set(value As Boolean)
+            CmdSave.Enabled = value
+            CmdUndo.Enabled = CmdSave.Enabled
+            CmdGotoFirst.Enabled = Not CmdSave.Enabled
+            CmdAddNew.Enabled = Not CmdSave.Enabled
+
+            CmdRefresh.Enabled = CmdGotoFirst.Enabled
+            CmdGotoLast.Enabled = CmdGotoFirst.Enabled
+            CmdGotoNext.Enabled = CmdGotoFirst.Enabled
+            CmdGotoPrevious.Enabled = CmdGotoFirst.Enabled
+            CmdDelete.Enabled = CmdAddNew.Enabled
+            TxtFind.Enabled = CmdRefresh.Enabled
+            RaiseEvent NavigationEvent(Me, New NavigationEventArgs("Editing",, value))
+        End Set
+    End Property
+#End Region
+End Class

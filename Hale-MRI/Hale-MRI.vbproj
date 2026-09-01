@@ -1,0 +1,136 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<!-- Suppresses cross-platform folders (runtimes) by targeting Windows only -->
+		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+		<StartupObject>Sub Main</StartupObject>
+		<UseWindowsForms>true</UseWindowsForms>
+		<MyType>WindowsFormsWithCustomSubMain</MyType>
+		<!-- Stripped AnyCPU out to force IDE alignment -->
+		<Platforms>x64</Platforms>
+		<!-- Suppresses language satellites by targeting English only -->
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+		<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+		<DoNotCombineProcessorArchitectures>true</DoNotCombineProcessorArchitectures>
+		<Configurations>Release;Debug</Configurations>
+	</PropertyGroup>
+
+	<!-- Explicit x64 Mapping (Guarantees native 64-bit execution for BOTH Debug and Release) -->
+	<PropertyGroup Condition="'$(Platform)' == 'x64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Release'">win-x64</RuntimeIdentifier>
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Debug'">win-x64</RuntimeIdentifier>
+		<SelfContained>false</SelfContained>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="junk\**" />
+    <EmbeddedResource Remove="junk\**" />
+    <None Remove="junk\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Constants.vb" />
+    <Compile Remove="Form1.Designer.vb" />
+    <Compile Remove="Form1.vb" />
+    <Compile Remove="Form2.Designer.vb" />
+    <Compile Remove="Form2.vb" />
+    <Compile Remove="Form3.Designer.vb" />
+    <Compile Remove="Form3.vb" />
+    <Compile Remove="Strings.vb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="Form1.resx" />
+    <EmbeddedResource Remove="Form2.resx" />
+    <EmbeddedResource Remove="Form3.resx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="appsettings - Copy.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Import Include="Hale_MRI_Reporting" />
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EntityFrameworkCore.Jet" Version="8.0.0" />
+    <PackageReference Include="EntityFrameworkCore.Jet.Data" Version="8.0.0" />
+    <PackageReference Include="EntityFrameworkCore.Jet.Odbc" Version="8.0.0" />
+    <PackageReference Include="EntityFrameworkCore.Jet.OleDb" Version="8.0.0" />
+    <PackageReference Include="EntityFrameworkCore.VisualBasic" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.6">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="System.Data.Odbc" Version="8.0.1" />
+    <PackageReference Include="System.Data.OleDb" Version="8.0.1" />
+    <PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Hale-MRI Reporting\Hale-MRI Reporting.vbproj">
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\LibDatabase\LibDatabase.vbproj" />
+    <ProjectReference Include="..\LibEncoder\LibEncoder.vbproj" />
+    <ProjectReference Include="..\LibGlobals\LibGlobals.vbproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="FrmJobs2 - Copy.vb" />
+    <Compile Update="My Project\Application.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Update="My Project\Settings.Designer.vb">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Update="My Project\Settings.settings">
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <Generator>PublicSettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <PropertyGroup>	
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>	
+	<RootNamespace>$(MSBuildProjectName.Replace(" ", "_").Replace("-", "_"))</RootNamespace>	
+	<ImportedNamespaces>Hale_MRI_Reporting=False,System.Data=False,System.Drawing=False,System.Windows.Forms=False,Microsoft.VisualBasic=True,System=True,System.Collections=True,System.Collections.Generic=True,System.Diagnostics=True,System.Linq=True,System.Xml.Linq=True,System.Threading.Tasks=True,Hale-MRI=True</ImportedNamespaces>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+</Project>
