@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>LibGlobals</RootNamespace>
+		<!-- 1. Must target windows specifically -->
+		<TargetFramework>net8.0</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Upgraded to target Windows specifically as your comment requested -->
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<Platforms>x64</Platforms>
+		<!-- Stripped AnyCPU out -->
+
+		<!-- Forces MSBuild to resolve processor mismatches down to the active selection -->
+		<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+		<DoNotCombineProcessorArchitectures>true</DoNotCombineProcessorArchitectures>
+		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+		<Configurations>Release;Debug</Configurations>
+	</PropertyGroup>
+
+	<!-- Explicit x64 Mapping (Guarantees native 64-bit execution for BOTH Debug and Release) -->
+	<PropertyGroup Condition="'$(Platform)' == 'x64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Release'">win-x64</RuntimeIdentifier>
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Debug'">win-x64</RuntimeIdentifier>
+		<SelfContained>false</SelfContained>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="Printing.vb" />
+	</ItemGroup>
+
+</Project>

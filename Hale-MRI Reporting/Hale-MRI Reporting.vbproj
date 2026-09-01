@@ -1,0 +1,147 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<!-- Suppresses cross-platform folders (runtimes) by targeting Windows only -->
+		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+		<RootNamespace>Hale_MRI_Reporting</RootNamespace>
+		<StartupObject>Hale_MRI_Reporting.My.MyApplication</StartupObject>
+		<UseWindowsForms>true</UseWindowsForms>
+		<MyType>WindowsForms</MyType>
+		<Platforms>x64</Platforms>
+		<!-- Suppresses language satellites by targeting English only -->
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+		<Configurations>Release;Debug</Configurations>
+	</PropertyGroup>
+
+	<!-- Explicit x64 Mapping (Guarantees native 64-bit execution for BOTH Debug and Release) -->
+	<PropertyGroup Condition="'$(Platform)' == 'x64'">
+		<PlatformTarget>x64</PlatformTarget>
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Release'">win-x64</RuntimeIdentifier>
+		<RuntimeIdentifier Condition="'$(Configuration)' == 'Debug'">win-x64</RuntimeIdentifier>
+		<SelfContained>false</SelfContained>
+	</PropertyGroup>
+	
+  <ItemGroup>
+    <Compile Remove="junk\**" />
+    <EmbeddedResource Remove="junk\**" />
+    <None Remove="junk\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="ChartBladesbySector.Designer.vb" />
+    <Compile Remove="ChartBladesbySector.vb" />
+    <Compile Remove="ChartSectorsbyBlade.Designer.vb" />
+    <Compile Remove="ChartSectorsbyBlade.vb" />
+    <Compile Remove="ChartSummary - Copy.Designer.vb" />
+    <Compile Remove="ChartSummary.Designer.vb" />
+    <Compile Remove="ChartSummary.vb" />
+    <Compile Remove="DocumentPanel.Designer.vb" />
+    <Compile Remove="DocumentPanel.vb" />
+    <Compile Remove="NativeMethods.vb" />
+    <Compile Remove="oldDisplayControl.Designer.vb" />
+    <Compile Remove="oldDisplayControl.vb" />
+    <Compile Remove="oldDocumentPage.Designer.vb" />
+    <Compile Remove="oldDocumentPage.vb" />
+    <Compile Remove="oldReportPage.Designer.vb" />
+    <Compile Remove="oldReportPage.vb" />
+    <Compile Remove="oldReportViewer.Designer.vb" />
+    <Compile Remove="oldReportViewer.vb" />
+    <Compile Remove="ReportLetterhead1.Designer.vb" />
+    <Compile Remove="ReportLetterhead1.vb" />
+    <Compile Remove="ReportPanel.Designer.vb" />
+    <Compile Remove="ReportPanel.vb" />
+    <Compile Remove="SizeFExtensions.vb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="ChartBladesbySector.resx" />
+    <EmbeddedResource Remove="ChartSectorsbyBlade.resx" />
+    <EmbeddedResource Remove="ChartSummary.resx" />
+    <EmbeddedResource Remove="oldDisplayControl.resx" />
+    <EmbeddedResource Remove="oldDocumentPage.resx" />
+    <EmbeddedResource Remove="oldReportPage.resx" />
+    <EmbeddedResource Remove="ReportLetterhead1.resx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.10" />
+    <PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LibDatabase\LibDatabase.vbproj" />
+    <ProjectReference Include="..\LibGlobals\LibGlobals.vbproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Glg.NetCE">
+      <HintPath>..\..\..\..\..\..\GLG\GlgCE.4.6_x64\lib\.NetCore.8\Glg.NetCE.dll</HintPath>
+    </Reference>
+    <Reference Include="Glg.NetGatewayCE">
+      <HintPath>..\..\..\..\..\..\GLG\GlgCE.4.6_x64\lib\.NetCore.8\Glg.NetGatewayCE.dll</HintPath>
+    </Reference>
+    <Reference Include="Glg.NetGatewayMessageIOSampleCE">
+      <HintPath>..\..\..\..\..\..\GLG\GlgCE.4.6_x64\lib\.NetCore.8\Glg.NetGatewayMessageIOSampleCE.dll</HintPath>
+    </Reference>
+    <Reference Include="Jurassic">
+      <HintPath>..\..\..\..\..\..\GLG\GlgCE.4.6_x64\lib\.NetCore.8\Jurassic.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="DisplayTables\StandardToleranceTable.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="DisplayTables\MichiganToleranceTable.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="My Project\Application.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Update="My Project\Resources.Designer.vb">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="My Project\Settings.Designer.vb">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Update="DocumentPage.vb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="My Project\Resources.resx">
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="BarGraphChart.g">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Update="My Project\Settings.settings">
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>
