@@ -6,7 +6,7 @@
 		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
 		<Platforms>x64</Platforms>
 		<!-- Stripped AnyCPU out entirely -->
-		<ImportedNamespaces>USB4Wrapper=False,Microsoft.VisualBasic=True,System=True,System.Collections=True,System.Collections.Generic=True,System.Diagnostics=True,System.Linq=True,System.Xml.Linq=True,System.Threading.Tasks=True,LibEncoder=True</ImportedNamespaces>
+		<ImportedNamespaces>LibGlobals=False,USB4Wrapper=False,Microsoft.VisualBasic=True,System=True,System.Collections=True,System.Collections.Generic=True,System.Diagnostics=True,System.Linq=True,System.Xml.Linq=True,System.Threading.Tasks=True,LibEncoder=True</ImportedNamespaces>
 		<Configurations>Debug;Release</Configurations>
 		<!-- Forces MSBuild to resolve processor mismatches down to the active selection -->
 		<ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
@@ -29,12 +29,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Import Include="LibGlobals" />
 		<Reference Include="USB4Wrapper"></Reference>
 		<Import Include="USB4Wrapper" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Hale-MRI-v2\LibGlobals\LibGlobals.vbproj" />
+	  <ProjectReference Include="..\LibGlobals\LibGlobals.vbproj" />
 	</ItemGroup>
 
 </Project>
